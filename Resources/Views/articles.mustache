@@ -6,13 +6,13 @@
             {{# articles }}
               <article data-news-id="{{ .id }}">
                  <a href="#up" class="uparrow">&#9650;</a> 
-                 <h2><a href="{{ .url }}" rel="nofollow">{{ .title }}</a></h2>
-                 <address>at esapi.intellexer.com</address>
+                 <h2><a href="{{ .url }}" rel="nofollow" target="_blank">{{ .title }}</a></h2>
+                 <address>{{ .hostname }}</address>
                  <p>
                     {{ .up }} points by 
-                    <username><a href="/user/johnsmith">johnsmith</a></username>
-                    1 day ago | 
-                    <a href="/news/1630">0 comments</a>
+                    <username><a href="/user/{{ .username }}">{{ .username }}</a></username>
+                    {{ .posted }} | 
+                    <a href="/news/{{ .id }}">{{ .comments }} comments</a>
                  </p>
               </article>
             {{/ articles }}

@@ -149,6 +149,11 @@ article p {
     margin-left:20px;
 }
 
+article p.text {
+    margin: 20px 0;
+    color: #999;
+}
+
 article p a {
     color: #666;
 }

@@ -23,16 +23,17 @@ let linkController = LinkController(application: app)
 let userController = UserController(application: app)
 
 app.middleware(AuthMiddleware.self) {
-   // articles / links
-   app.get("/", handler: linkController.index)
-   app.get("/submit", handler: linkController.add)
-   app.post("/api/submit", handler: linkController.add)
+    // articles / links
+    app.get("/", handler: linkController.index)
+    app.get("/submit", handler: linkController.add)
+    app.get("news", Int.self, handler: linkController.show)
+    app.post("/api/submit", handler: linkController.add)
 
-   // user management
-   app.get("/login", handler: userController.login)
-   app.get("/register", handler: userController.register)
-   app.post("/api/login", handler: userController.login)
-   app.post("/api/register", handler: userController.register)
+    // user management
+    app.get("/login", handler: userController.login)
+    app.get("/register", handler: userController.register)
+    app.post("/api/login", handler: userController.login)
+    app.post("/api/register", handler: userController.register)
 }
 
 

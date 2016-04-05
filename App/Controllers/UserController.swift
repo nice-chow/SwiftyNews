@@ -99,7 +99,7 @@ class UserController {
             "email": email,
             "auth": authToken,
             "apisecret": apisecret,
-            "flags": "",
+            "flags": "-",
             "karma_incr_time": time])
 
         try redis.set("username.to.id:\(username.lowercaseString)", "\(id)")

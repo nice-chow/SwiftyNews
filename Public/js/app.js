@@ -26,7 +26,7 @@ function submit() {
         news_id: $("input[name=news_id]").val(),
         title: $("input[name=title]").val(),
         url: $("input[name=url]").val(),
-        text: $("textarea[name=text]").val(),
+        text: btoa($("textarea[name=text]").val()),
         apisecret: $("input[name=apisecret]").val()
     };
     var del = $("input[name=del]").length && $("input[name=del]").attr("checked");

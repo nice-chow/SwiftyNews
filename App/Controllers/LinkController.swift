@@ -1,6 +1,7 @@
 import Vapor
 import Redbird
 import Foundation
+import POSIXRegex
 
 enum Vote: String {
     case Up = "up"
@@ -13,16 +14,14 @@ class LinkController {
     }
     
     func index(request: Request) throws -> ResponseRepresentable {
-
         let news = try getTopNews()
-        for var n in news {
-            if let userId = n["userId"] {
-                let username = try redis.hget("user:\(userId)", key: "username")
-                n["username"] = username
-            }
-        }
-
         return try app.view("articles.mustache", context: ["articles": news, "params": request.parameters])
+    }
+
+    func show(request: Request, newsId: Int) throws -> ResponseRepresentable {
+        let articles = try getNewsByIds(["\(newsId)"])
+        let article = articles[0]
+        return try app.view("article.mustache", context: ["article": article, "params": request.parameters])
     }
     
     func store(request: Request) throws -> ResponseRepresentable {
@@ -45,14 +44,16 @@ class LinkController {
             let time = "\(Int(NSDate().timeIntervalSince1970))"
             //let content = request.data["content"]?.string ?? ""
             
-            var url = "\"\"" //empty url
-
+            var url = "-" //empty url
             // Check if link is provided
-            if let link = request.data["url"]?.string {
+            if let link = request.data["url"]?.string where link != "url" {
                 url = link
-            } else if let text = request.data["text"]?.string  { //otherwise is a discussion
-                let utf8str = text.data(usingEncoding:NSUTF8StringEncoding)
-                url = "text://\(utf8str)"
+            } else if let text = request.data["text"]?.string where text != "text"  { //otherwise is a discussion
+                url = "text://\(text)"
+            }
+
+            guard url.hasPrefix("https://") || url.hasPrefix("http://") || url.hasPrefix("text://") else {
+                return Json(["status": "err", "message": "Dude, text is empty or that's an invalid link, only HTTP or HTTPS are allowed as schema."])
             }
 
             do {
@@ -179,6 +180,69 @@ class LinkController {
 
     private func getNewsByIds(ids: [String]) throws -> [[String:String]] {
         let news = try ids.map({ try redis.hgetall("news:\($0)") })
-        return news
+        var result = [[String:String]]()
+        for var item in news {
+            if let userId = item["userId"] {
+                let user = try redis.hgetall("user:\(userId)")
+                item["username"] = user["username"]!
+            }
+            if let url = item["url"] {
+                if let hostname = hostnameFromURL(url) {
+                    item["hostname"] = hostname
+                } else if url.hasPrefix("text://"), let newsId = item["id"] {
+                    item["url"] = "/news/\(newsId)"
+                    let textSchema = try! Regex(pattern: "text://")
+                    let encodedText = textSchema.replace(url, withTemplate: "")
+                    print("encoded -> \(encodedText)")
+                    if let decodedData = NSData(base64EncodedString: encodedText, options: NSDataBase64DecodingOptions(rawValue: 0)),
+                        let decodedString = String(data: decodedData, encoding: NSUTF8StringEncoding) {
+                            item["text"] = decodedString 
+                    }
+                }
+            }
+            if let time = item["ctime"] {
+                item["posted"] = humanReadablePostTime(Int(time) ?? 0)
+            }
+            result.append(item)
+        }
+        return result
     }
+}
+
+private func hostnameFromURL(url: String) -> String? {
+    guard url.hasPrefix("https://") || url.hasPrefix("http://") else {
+        return nil
+    }
+    
+    let http = try! Regex(pattern: "http://")
+    let https = try! Regex(pattern: "https://")
+    let www = try! Regex(pattern: "www.")
+    var striped = http.replace(url, withTemplate: "")
+    striped = https.replace(striped, withTemplate: "")
+    striped = www.replace(striped, withTemplate: "")
+
+    return striped.characters.split(separator: "/", maxSplits:1024, omittingEmptySubsequences: true).map { String($0) }[0]
+}
+
+private func humanReadablePostTime(time: Int) -> String {
+    let newsDate = NSDate(timeIntervalSince1970: (Double(time) ?? 0) ?? 0.0)
+    let delta = abs(Int(newsDate.timeIntervalSinceNow))
+
+    if delta < 3 {
+        return "just now"
+    } else if delta < 60 {
+        return "\(delta) seconds ago"
+    } else if delta < 120 {
+        return "1 minute ago"
+    } else if delta < 3600 {
+        return "\(delta / 60) minutes ago"
+    } else if delta < 7200 {
+        return "1 hour ago"
+    } else if delta < 86400 {
+        return "\(delta / 3600) hours ago"
+    } else if delta < 172800 {
+        return "1 day ago"
+    }
+
+    return "\((delta / 86400) + 1) days ago"
 }
