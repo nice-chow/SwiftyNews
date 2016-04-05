@@ -1,0 +1,35 @@
+{{< layout }}
+
+    {{$ content }}
+
+        {{# article }}
+          <article data-news-id="{{ .id }}">
+             <a href="#up" class="uparrow">&#9650;</a> 
+             <h2><a href="{{ .url }}" rel="nofollow" target="_blank">{{ .title }}</a></h2>
+             <address>{{ .hostname }}</address>
+             <p>
+                {{ .up }} points by 
+                <username><a href="/user/{{ .username }}">{{ .username }}</a></username>
+                {{ .posted }} | 
+                <a href="/news/{{ .id }}">{{ .comments }} comments</a>
+             </p>
+             <p class="text">
+                 {{ .text }}
+             </p>
+             
+             {{# params.username }}
+                 <form id="f" name="f">
+                     <input name="news_id" type="hidden" value="{{ .id }}">
+                     <input name="comment_id" type="hidden" value="-1">
+                     <input name="parent_id" type="hidden" value="-1">
+                     <textarea cols="60" name="comment" rows="10"></textarea><br/>
+                     <input name="post_comment" type="button" value="Send comment">
+                 </form>
+             {{/ params.username }}
+          </article>
+
+        {{/ article }}
+
+    {{/ content }}
+
+{{/ layout }}
